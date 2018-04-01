@@ -32,7 +32,7 @@ def get_all(kind, ns='prod'):
     lines[0] = lines[0].lower()
     lines = [ii.split() for ii in lines]
     df = pd.DataFrame(lines[1:], columns=lines[0])
-    df = df.dropna()
+    df = df.dropna(subset=['age'])
     df['age'] = df['age'].map(_age_str_to_minutes)
     return df
 
@@ -58,8 +58,20 @@ def top(kind, ns='prod'):
     lines = [ii.split() for ii in lines]
     df = pd.DataFrame(lines[1:], columns=lines[0])
     df = df.dropna()
+    
+    # Update CPU
     df['cpu(cores)'] = df['cpu(cores)'].map(lambda a: int(a[:-1]))
-    df = df.rename(columns={'cpu(cores)': 'cpu'})
+    
+    # Update memory
+    def mem_string_to_int(string):
+        if not string.endswith('Mi'):
+            return string
+        string = int(string.replace('Mi', '')) / 1000
+        return string
+    df['memory(bytes)'] = df['memory(bytes)'].map(mem_string_to_int)
+    
+    # Rename columns and return
+    df = df.rename(columns={'cpu(cores)': 'cpu', 'memory(bytes)': 'memory'})
     return df.sort_values('cpu', ascending=False)
 
 def delete(name, kind='pod', ns='prod', force=False, verbose=True):

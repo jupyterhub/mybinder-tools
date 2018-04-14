@@ -1,5 +1,6 @@
 from subprocess import check_output, check_call
 import pandas as pd
+import re
 
 AGE_IN_MINS = {'s': 1/60., 'm': 1, 'h': 60, 'd': 60*24}
 
@@ -30,10 +31,13 @@ def get_all(kind, ns='prod'):
     out = check_output(cmd.split())
     lines = out.decode().split('\n')
     lines[0] = lines[0].lower()
-    lines = [ii.split() for ii in lines]
+    lines = [re.split(r'\s{2,}', ii) for ii in lines]
     df = pd.DataFrame(lines[1:], columns=lines[0])
     df = df.dropna(subset=['age'])
     df['age'] = df['age'].map(_age_str_to_minutes)
+    if 'node' in df.columns:
+        df['fullnode'] = df['node']
+        df['node'] = df['node'].map(lambda a: a.split('-')[-1])
     return df
 
 def top(kind, ns='prod'):
